@@ -1,0 +1,37 @@
+name: Build Windows C++ EXE
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC environment
+        shell: cmd
+        run: |
+          if exist "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" (
+            call "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+          ) else if exist "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat" (
+            call "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+          ) else (
+            echo vcvars64.bat not found, continuing and hoping cl is in PATH
+          )
+
+      - name: Build with cl
+        shell: cmd
+        run: |
+          md dist || exit 0
+          cl /EHsc /O2 /Fe:dist\video_player.exe src\video_player.cpp urlmon.lib shell32.lib shlwapi.lib
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video_player-windows-cpp
+          path: dist/video_player.exe
